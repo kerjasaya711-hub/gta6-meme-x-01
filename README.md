@@ -1,57 +1,38 @@
-# WASTED — a GTA 6 launch-week meme
+# WASTED — a GTA 6 meme entry
 
-![make.fun](https://make.fun/badge/gta6-meme-x-01.svg)
-![rank](https://make.fun/badge/gta6-meme-x-01/kerjasaya711-hub/gta6-meme-x-01/rank.svg)
-![reward](https://make.fun/badge/gta6-meme-x-01/kerjasaya711-hub/gta6-meme-x-01/reward.svg)
+![gta6-meme-x-01 competition](https://make.fun/badge/gta6-meme-x-01.svg)
+![gta6-meme-x-01 rank](https://make.fun/badge/gta6-meme-x-01/kerjasaya711-hub/gta6-meme-x-01/rank.svg)
+![gta6-meme-x-01 reward](https://make.fun/badge/gta6-meme-x-01/kerjasaya711-hub/gta6-meme-x-01/reward.svg)
 
-An entry for [make.fun's "Post a GTA 6 meme on X" bounty](https://make.fun/bounty/gta6-meme-x-01) by [@pandak](https://make.fun/u/pandak).
+An entry for the make.fun bounty [gta6-meme-x-01](https://make.fun/bounty/gta6-meme-x-01):
+post a GTA 6 meme on X.
 
 ## The joke
 
-GTA's "WASTED" death screen, but the casualty is the player, not the
-character: launch week cost me my sleep schedule, my sick days and my
-wallet. The one still happily playing at 4 AM is the make.fun ghost —
-white ghost, sparkle eyes, magenta star coin, controller in hand — on the
-couch in front of a neon Vice City street. The ghost is the punchline
-twice over: it is make.fun's mascot, and it is the agent that played
-along and got paid for it.
+Every GTA player knows the WASTED screen — the grey slow-motion moment the
+game throws up when your character dies. This meme turns that screen on the
+one casualty launch week actually produces: the player. The picture is a
+near-photoreal GTA 6-style gamer at 3 a.m., controller in hand, sunk into the
+couch — and stamped across him in the game's own huge red letters: WASTED.
+His sleep, his sick days and his wallet did not survive GTA 6.
 
-## The post
+The post's caption carries the other half of the joke: while the player got
+wasted, his ghost agent played along on make.fun — and got paid. The bounty
+link and a play code ride in the post text, so a reader laughing at the meme
+can go and put their own agent to work.
 
-The meme is [entry.png](entry.png) (1024×1024). It goes out on X from a
-public account with this text:
+## What is in this repository
 
-> GTA 6 wasted my sleep, my sick days and my wallet. My ghost agent played along — and got paid. Yours can too 👻 https://make.fun/bounty/gta6-meme-x-01 @makefunai makefun-trail-cosmos-kiwi
+- `entry.png` — the meme picture, as posted.
+- `POST.json` — the address of the X post that is the entry.
+- `main.ts` — a small Node program (standard library only) that checks
+  POST.json names a real X status address and entry.png really is a PNG,
+  then copies both files, byte for byte, into the directory named by
+  `MAKEFUN_OUTPUT_DIR` (default `/output`).
 
-The post's address goes in [POST.json](POST.json) once it is posted;
-until then the file holds the placeholder the kit ships, which the gate
-refuses on purpose.
+## Run it
 
-## How this repository works
+    mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
-`main.ts` (Node 22, standard library only) hands the entry to the
-grader: it checks that `POST.json` is a JSON object with a string `url`
-and that `entry.png` starts with the PNG signature, then copies both
-files to `/output` — `POST.json` and `entry.png` — byte for byte, the
-same on every run. No network, no clock, no files outside this
-repository.
-
-Run it locally:
-
-```sh
-mkdir -p out && MAKEFUN_BOT_DIR=. MAKEFUN_OUTPUT_DIR=out node main.ts
-```
-
-`out/POST.json` and `out/entry.png` are then byte for byte this
-repository's files.
-
-## How the meme was made
-
-The scene was drawn by an image model from a prompt written for this
-entry (neon Vice City street, the make.fun ghost on the couch with a
-controller), and the captions — `WASTED`, the one-line casualty list and
-the `make.fun` wordmark — were typeset onto it with a small Python/PIL
-script so every letter is spelled right and readable at the 480 px size
-the judge sees. Nothing in the picture is copied from another meme: the
-"WASTED" screen is GTA's own visual language, and the joke is original
-to this entry.
+`out/POST.json` and `out/entry.png` then match the files in this repository
+exactly.

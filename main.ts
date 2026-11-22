@@ -1,61 +1,81 @@
-// WASTED — a GTA 6 launch-week meme entry for make.fun's gta6-meme-x-01.
+// Entry program for the gta6-meme-x-01 make.fun bounty ("WASTED" meme).
 //
-// The entry itself is the X post: the meme picture (entry.png, in this
-// repository) is posted from a public X account with make.fun and the
-// entrant's play code in the post's text, and POST.json names that post.
-// This program's whole job is to hand both files to the grader, byte for
-// byte, the same way on every run:
-//
-//   - POST.json  -> /output/POST.json  (the post's address on X)
-//   - entry.png  -> /output/entry.png  (the meme, for the record)
-//
-// Node 22, standard library only. No network, no clock, no files outside
-// this repository, so the two runs the grader makes write identical bytes.
-//
-// Run it locally the way the grader does:
-//
-//   mkdir -p out && MAKEFUN_BOT_DIR=. MAKEFUN_OUTPUT_DIR=out node main.ts
+// The entry itself is a post on X; this repository just hands in its address.
+// This program validates the two payload files sitting next to it — POST.json
+// (the post's address) and entry.png (the meme picture) — and then copies both
+// of them, byte for byte, into the output directory the runner points at with
+// MAKEFUN_OUTPUT_DIR (default /output). No network, no clock, nothing else.
 
 import { copyFileSync, mkdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const BOT_DIR = process.env.MAKEFUN_BOT_DIR ?? "/bot";
-const OUTPUT_DIR = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
+const repoDir = dirname(fileURLToPath(import.meta.url));
+const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
 
-// The PNG signature every PNG file starts with. Checking it keeps a
-// truncated or misnamed picture from ever reaching the grader silently.
-const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+// The address the starter ships with; it names no real post and must never
+// be handed in as if it did.
+const PLACEHOLDER_URL = "https://x.com/<handle>/status/<id>";
+
+// An X status address: x.com, a handle of letters/digits/underscores, the
+// literal word "status", and a digits-only post id.
+const STATUS_URL = /^https:\/\/x\.com\/[A-Za-z0-9_]+\/status\/[0-9]+$/;
 
 function fail(message: string): never {
-  console.error(`main.ts: ${message}`);
-  process.exit(1);
+  throw new Error(`gta6-meme-x-01 entry: ${message}`);
 }
 
-mkdirSync(OUTPUT_DIR, { recursive: true });
-
-// POST.json must be a JSON object naming the post's address on X.
-const postPath = join(BOT_DIR, "POST.json");
-let post: unknown;
-try {
-  post = JSON.parse(readFileSync(postPath, "utf8"));
-} catch (err) {
-  fail(`POST.json could not be read as JSON: ${(err as Error).message}`);
-}
-if (typeof post !== "object" || post === null || typeof (post as { url?: unknown }).url !== "string") {
-  fail("POST.json must be a JSON object with a string url");
-}
-
-// entry.png must be a real PNG before it is copied anywhere.
-const memePath = join(BOT_DIR, "entry.png");
-let meme: Buffer;
-try {
-  meme = readFileSync(memePath);
-} catch (err) {
-  fail(`entry.png could not be read: ${(err as Error).message}`);
-}
-if (!meme.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) {
-  fail("entry.png does not start with the PNG signature");
+function readPostUrl(): string {
+  const raw = readFileSync(join(repoDir, "POST.json"), "utf8");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    fail("POST.json is not valid JSON");
+  }
+  if (typeof parsed !== "object" || parsed === null) {
+    fail("POST.json must be a JSON object like {\"url\": \"...\"}");
+  }
+  const url = (parsed as { url?: unknown }).url;
+  if (typeof url !== "string" || url.length === 0) {
+    fail("POST.json must carry a string \"url\"");
+  }
+  if (url === PLACEHOLDER_URL || !STATUS_URL.test(url)) {
+    fail(`POST.json url is not a real x.com status address: ${url}`);
+  }
+  return url;
 }
 
-copyFileSync(postPath, join(OUTPUT_DIR, "POST.json"));
-copyFileSync(memePath, join(OUTPUT_DIR, "entry.png"));
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+function checkPng(): void {
+  const bytes = readFileSync(join(repoDir, "entry.png"));
+  if (bytes.length < PNG_SIGNATURE.length) {
+    fail("entry.png is too small to be a PNG file");
+  }
+  for (let i = 0; i < PNG_SIGNATURE.length; i += 1) {
+    if (bytes[i] !== PNG_SIGNATURE[i]) {
+      fail("entry.png does not start with the PNG signature bytes");
+    }
+  }
+}
+
+readPostUrl();
+checkPng();
+
+mkdirSync(outDir, { recursive: true });
+copyFileSync(join(repoDir, "POST.json"), join(outDir, "POST.json"));
+copyFileSync(join(repoDir, "entry.png"), join(outDir, "entry.png"));
+
+// Read both copies back and compare them with the sources, so a short or
+// corrupted write can never be handed in silently.
+function verifyCopy(name: string): void {
+  const source = readFileSync(join(repoDir, name));
+  const handed = readFileSync(join(outDir, name));
+  if (!source.equals(handed)) {
+    fail(`${name} changed while being copied to the output directory`);
+  }
+}
+
+verifyCopy("POST.json");
+verifyCopy("entry.png");
